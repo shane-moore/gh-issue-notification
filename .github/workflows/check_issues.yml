@@ -1,0 +1,26 @@
+name: Check for Good First Issues
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # Runs every 5 minutes
+
+jobs:
+  check_issues:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check for new issues
+      id: check_issues
+      run: |
+        curl -s https://api.github.com/repos/paradigmxyz/reth/issues | jq '.[] | select(.labels[].name == "D-good-first-issue") | .html_url' > issues.txt
+        if [ -s issues.txt ]; then
+          echo "new_issues=true" >> $GITHUB_ENV
+        else
+          echo "new_issues=false" >> $GITHUB_ENV
+        fi
+
+    - name: Send Telegram Notification
+      if: env.new_issues == 'true'
+      run: |
+        while IFS= read -r issue; do
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="New Good First Issue: $issue"
+        done < issues.txt
