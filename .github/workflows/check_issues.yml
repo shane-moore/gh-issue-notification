@@ -11,7 +11,9 @@ jobs:
     - name: Check for new issues
       id: check_issues
       run: |
-        curl -s https://api.github.com/repos/paradigmxyz/reth/issues | jq '.[] | select(.labels[].name == "D-good-first-issue") | .html_url' > issues.txt
+        current_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        five_minutes_ago=$(date -u -d "-5 minutes" +"%Y-%m-%dT%H:%M:%SZ")
+        curl -s https://api.github.com/repos/paradigmxyz/reth/issues | jq -r --arg current_time "$current_time" --arg five_minutes_ago "$five_minutes_ago" '.[] | select(.labels[].name == "D-good-first-issue" and .created_at >= $five_minutes_ago and .created_at < $current_time) | .html_url' > issues.txt
         if [ -s issues.txt ]; then
           echo "new_issues=true" >> $GITHUB_ENV
         else
